@@ -1,0 +1,22 @@
+{
+  "webServer": {
+    "bind": "0.0.0.0",
+    "port": 8000
+  },
+  "router": {
+    "host": "",
+    "port": 22,
+    "username": "",
+    "password": ""
+  },
+  "interfaces": {
+    "eth1": {
+      "verbose": "Wired",
+      "reverse": true
+    },
+    "wifi0": {
+      "verbose": "Wireless",
+      "reverse": true
+    }
+  }
+}

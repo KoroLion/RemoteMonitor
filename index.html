@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RouterMonitor</title>
+</head>
+<body>
+    <button id="swapScheme">Dark</button>
+    <h1>RouterMonitor (v {{version}})</h1>
+    <div>
+        <strong>Uptime: </strong><span id="uptime"></span> h
+        <br>
+        <strong>Average load (5 min): </strong><span id="avgLoadMin5"></span> %
+        <br>
+        <strong>Processes: </strong><span id="processesAmount"></span>
+        <br>
+        <strong>Memory Used/Total: </strong><span id="memUsed"></span> / <span id="memTotal"></span> MB
+        <br><br>
+
+        <hr>
+
+        <div id="interfacesBlockTemplate" style="display: none;">
+            <div>
+                <h3>{{verbose}} ({{name}}):</h3>
+                <strong>Traffic (Receive): </strong><span id="traffic{{name}}Receive"></span> MB
+                <br>
+                <strong>Traffic (Transmit): </strong><span id="traffic{{name}}Transmit"></span> MB
+                <br>
+                <strong>Drop + Errors: </strong><span id="traffic{{name}}Bad"></span> packets
+                <br>
+                <strong>Usage: </strong><span id="traffic{{name}}Usage"></span> MB/s
+            </div>
+        </div>
+
+        <div id="interfacesBlock">
+
+        </div>
+
+        <br><br>
+        <i>by <a href="https://liokor.com/@KoroLion/" target="_blank">KoroLion</a></i>
+    </div>
+    <script>
+        function request(method, url, callback) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            xhr.addEventListener('load', function () {
+                callback(xhr.status, xhr.response);
+            });
+            xhr.send();
+        }
+
+        function setData(data) {
+            uptime.innerHTML = (data['uptime']['up'] / 3600).toFixed(1);
+            avgLoadMin5.innerHTML = (data['average_load']['min5'] * 100).toFixed(1);
+
+            processesAmount.innerHTML = data['processes'];
+
+            let memUsedMB = data['mem']['total']  - data['mem']['available'];
+            memTotal.innerHTML = (data['mem']['total'] / 1024).toFixed(1);
+            memUsed.innerHTML = (memUsedMB / 1024).toFixed(1);
+
+            for (let iData of data.interfaces) {
+                document.getElementById('traffic' + iData['name'] + 'Receive').innerHTML = (iData['receive']['bytes'] / 1048576).toFixed(2);
+                document.getElementById('traffic' + iData['name'] + 'Transmit').innerHTML = (iData['transmit']['bytes'] / 1048576).toFixed(2);
+                document.getElementById('traffic' + iData['name'] + 'Bad').innerHTML = (iData['receive']['drop'] + iData['receive']['errors'] + iData['transmit']['drop'] + iData['transmit']['errors']);
+                document.getElementById('traffic' + iData['name'] + 'Usage').innerHTML = ((iData['receive']['usage'] + iData['transmit']['usage']) / 1048576).toFixed(2);
+            }
+        }
+
+        function updateData(initialize=false) {
+            request('GET', '/json_data/', function (status, response) {
+                let data = JSON.parse(response);
+
+                if (initialize) {
+                    let divTemplate = interfacesBlockTemplate.innerHTML;
+                    for (let iData of data.interfaces) {
+                        let div = document.createElement('DIV');
+                        div.innerHTML = divTemplate.replace(/{{verbose}}/gi, iData['verbose']).replace(/{{name}}/gi, iData['name']);
+                        interfacesBlock.append(div);
+                    }
+                }
+
+                setData(data);
+            });
+        }
+
+        swapScheme.addEventListener('click', function () {
+            if (swapScheme.innerHTML === 'Dark') {
+                document.body.style.backgroundColor = '#202020';
+                document.body.style.color = '#DADADA';
+                swapScheme.innerHTML = 'Bright';
+            } else {
+                document.body.style.backgroundColor = '';
+                document.body.style.color = '';
+                swapScheme.innerHTML = 'Dark';
+            }
+        });
+
+        updateData(true);
+        dataUpdater = setInterval(updateData, 1000);
+    </script>
+</body>
+</html>
